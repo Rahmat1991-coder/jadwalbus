@@ -324,12 +324,37 @@
             }
         }
 
+// --- FUNGSI FILTER & SIDEBAR (REPLACE DI SINI) ---
         function renderSidebar() {
-            const up = document.getElementById('list-upcoming'), un = document.getElementById('list-unpaid');
-            up.innerHTML = ''; un.innerHTML = '';
+            const up = document.getElementById('list-upcoming');
+            const un = document.getElementById('list-unpaid');
+            up.innerHTML = ''; 
+            un.innerHTML = '';
+            
+            // Ambil Nilai Filter
+            const fStart = document.getElementById('filter-start').value;
+            const fEnd = document.getElementById('filter-end').value;
             const today = new Date().toISOString().split('T')[0];
-            schedules.filter(s => s.date >= today).sort((a,b)=>a.date.localeCompare(b.date)).forEach(s => up.innerHTML += createCardHtml(s, false));
-            schedules.filter(s => s.status !== 'Lunas').sort((a,b)=>a.date.localeCompare(b.date)).forEach(s => un.innerHTML += createCardHtml(s, true));
+
+            // 1. Logika untuk Jadwal Terdekat (Mendukung Filter Tanggal)
+            let filteredUpcoming = schedules;
+            
+            if (fStart && fEnd) {
+                // Jika filter diisi, tampilkan sesuai range tanggal
+                filteredUpcoming = schedules.filter(s => s.date >= fStart && s.date <= fEnd);
+            } else {
+                // Jika filter kosong, tampilkan jadwal mulai dari hari ini ke depan
+                filteredUpcoming = schedules.filter(s => s.date >= today);
+            }
+
+            // Urutkan berdasarkan tanggal terdekat
+            filteredUpcoming.sort((a, b) => a.date.localeCompare(b.date))
+                .forEach(s => up.innerHTML += createCardHtml(s, false));
+
+            // 2. Logika untuk Belum Lunas (Selalu tampilkan semua yang belum lunas)
+            schedules.filter(s => s.status !== 'Lunas')
+                .sort((a, b) => a.date.localeCompare(b.date))
+                .forEach(s => un.innerHTML += createCardHtml(s, true));
         }
 
         function createCardHtml(s, isUnpaidColumn) {
@@ -548,11 +573,52 @@
     pWin.document.close();
 }
 
-        function sendWA(id) {
-            const s = schedules.find(x => x.id == id), b = buses.find(x => x.id == s.busId); const sisa = (parseInt(s.price) || 0) - (parseInt(s.dp) || 0); const statusTagihan = sisa > 0 ? `Sisa: *${formatRp(sisa)}*` : `*STATUS: LUNAS* ✅`;
-            const rawMsg = `*KONFIRMASI RESERVASI BUS*\n------------------\nKak *${s.cust}*\nTrip: ${s.trip}\nTgl: ${new Date(s.date).toLocaleDateString('id-ID')}\nBus: ${b?.name || '-'}\n------------------\nTotal: ${formatRp(s.price)}\nDP: ${formatRp(s.dp)}\n${statusTagihan}\n------------------\nTerima kasih! 🙏`;
-            let phone = s.phone.replace(/\D/g, ''); if (phone.startsWith('0')) phone = '62' + phone.substring(1);
-            window.open(`https://wa.me/${phone}?text=${encodeURIComponent(rawMsg)}`);
+function sendWA(id) {
+            const s = schedules.find(x => x.id == id);
+            const b = buses.find(x => x.id == s.busId);
+            const sisa = (parseInt(s.price) || 0) - (parseInt(s.dp) || 0);
+            
+            // Logika Status Pembayaran untuk Pesan
+            let statusText = "";
+            if (s.status === 'Lunas') {
+                statusText = "LUNAS \u2705 (Terima Kasih!)";
+            } else if (s.status === 'DP') {
+                statusText = `Sisa Tagihan: *${formatRp(sisa)}* \u23F3`;
+            } else {
+                statusText = "Belum Ada Pembayaran \u26A0\uFE0F";
+            }
+
+            // Template Pesan Profesional
+            const rawMsg = `*KONFIRMASI RESERVASI BUS* \uD83D\uDE8C
+--------------------------------------------
+Halo Kak *${s.cust}*, terimakasih telah mempercayakan perjalanan Anda kepada kami. Berikut adalah rincian reservasi Anda:
+
+\uD83D\uDCCD *Tujuan:* ${s.trip}
+\uD83D\uDCC5 *Tanggal:* ${new Date(s.date).toLocaleDateString('id-ID', {day:'2-digit', month:'long', year:'numeric'})}
+\uD83D\uDE8C *Armada:* ${b?.name || '-'} (${b?.plate || '-'})
+\uD83D\uDCCD *Titik Jemput:* ${s.pickup || '-'}
+\uD83C\uDFE0 *Alamat:* ${s.addr || '-'}
+
+*RINCIAN PEMBAYARAN:*
+\uD83D\uDCB0 Total Harga: ${formatRp(s.price)}
+\uD83D\uDCB3 DP/Masuk: ${formatRp(s.dp)}
+\uD83D\uDCDD *Status: ${statusText}*
+--------------------------------------------
+
+*Catatan:*
+- Mohon pastikan titik jemput sudah sesuai.
+- Harap standby 30 menit sebelum keberangkatan.
+
+Jika ada pertanyaan lebih lanjut, silakan hubungi kami kembali. Sampai jumpa di perjalanan! \uD83D\uDE4F`;
+
+            const encodedMsg = encodeURIComponent(rawMsg);
+            let phone = s.phone.replace(/\D/g, ''); 
+            
+            // Format nomor ke standar internasional (62)
+            if (phone.startsWith('0')) phone = '62' + phone.substring(1);
+            if (phone.startsWith('8')) phone = '62' + phone;
+
+            window.open(`https://wa.me/${phone}?text=${encodedMsg}`);
         }
 
         function openExportModal() { document.getElementById('modal-export').style.display = 'block'; }

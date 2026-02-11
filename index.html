@@ -463,7 +463,13 @@
     </div></div>
 
     <script>
-        const KEYS = { BUS: 'bus_pro_v39_buses', SCHED: 'bus_pro_v39_scheds', EXP: 'bus_pro_v39_exps', USER: 'bus_pro_session', PASS: 'bus_pro_passwords' };
+        const KEYS = { 
+    BUS: 'tisal_buses', 
+    SCHED: 'tisal_scheds', 
+    EXP: 'tisal_exps', 
+    USER: 'tisal_session', 
+    PASS: 'tisal_passwords' 
+};
         let buses = [], schedules = [], expenses = [], currDate = new Date();
         let currentUser = null;
         let passwords = { "Agus": "123", "Dani": "123", "Admin": "madhacker", "Owner": "tisal2026" };
@@ -555,7 +561,7 @@ function openAccountSettings() {
     // Mengisi input dengan data password yang ada di variabel
     document.getElementById('set-pass-agus').value = passwords["Agus"] || "123";
     document.getElementById('set-pass-dani').value = passwords["Dani"] || "123";
-    document.getElementById('set-pass-admin').value = passwords["Admin"] || "eratrans";
+    document.getElementById('set-pass-admin').value = passwords["Admin"] || "madhacker";
     document.getElementById('set-pass-owner').value = passwords["Owner"] || "tisal2026"; // Isi default jika kosong
     
     document.getElementById('modal-account').style.display = 'block';
